@@ -263,25 +263,18 @@ function showScreen(screenId) {
 // Form Submission Helper
 async function submitFormWithRetry(form, maxRetries = 3) {
     let retries = maxRetries;
-    
     while (retries > 0) {
         try {
-            const formData = new FormData(form);
             const response = await fetch(form.action, {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                body: new FormData(form),
+                headers: { 'Accept': 'application/json' }
             });
-
-            const responseData = await response.json();
-            
             if (response.ok) {
                 return { success: true };
             } else {
-                throw new Error(responseData.error || 'Error en el envío');
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error en el envío');
             }
         } catch (error) {
             logError(error, 'FormSubmission');
@@ -303,23 +296,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactForm) {
         contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const submitButton = contactForm.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
-            
+
             try {
                 const fullName = sanitizeInput(document.getElementById('full-name').value.trim());
                 const email = sanitizeInput(document.getElementById('contact-email').value.trim());
                 const phone = sanitizeInput(document.getElementById('phone-number').value.trim());
-                
+
                 if (!fullName || !email || !phone) {
                     throw new Error('Por favor, complete todos los campos.');
                 }
-                
                 if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                     throw new Error('Por favor, ingrese un correo electrónico válido.');
                 }
-                
                 if (!phone.match(/^\+?\d{7,15}$/)) {
                     throw new Error('Por favor, ingrese un número de teléfono válido (7-15 dígitos).');
                 }
@@ -331,17 +321,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInfo.email = email;
                 userInfo.phone = phone;
 
-                // Submit form with traditional form submission if AJAX fails
                 const result = await submitFormWithRetry(contactForm);
-                if (!result.success) {
-                    // Fallback to traditional form submission
-                    contactForm.submit();
-                    return;
+                if (result.success) {
+                    userInfo.isSubmitted = true;
+                    saveState();
+                    showScreen('gender-selection');
+                } else {
+                    throw result.error;
                 }
-                
-                userInfo.isSubmitted = true;
-                saveState();
-                showScreen('gender-selection');
             } catch (error) {
                 alert(error.message || 'Hubo un error al enviar el formulario. Por favor intenta nuevamente.');
             } finally {
@@ -448,42 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         saveState();
     });
-
-    // Handle results form submission
-    const resultForm = document.getElementById('result-form');
-    if (resultForm) {
-        resultForm.removeEventListener('submit', resultForm._submitHandler);
-        const submitHandler = async (e) => {
-            e.preventDefault();
-            const submitButton = resultForm.querySelector('button[type="submit"]');
-            const originalText = submitButton.textContent;
-            
-            try {
-                submitButton.textContent = 'Enviando...';
-                submitButton.disabled = true;
-
-                // Submit form with traditional form submission if AJAX fails
-                const result = await submitFormWithRetry(resultForm);
-                if (!result.success) {
-                    // Fallback to traditional form submission
-                    resultForm.submit();
-                    return;
-                }
-
-                alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
-                setTimeout(() => {
-                    window.location.href = 'https://www.queenross.fit/planes/';
-                }, 1500);
-            } catch (error) {
-                logError(error, 'ResultFormSubmission');
-                alert('Hubo un error al enviar el formulario. Por favor intenta nuevamente.');
-                submitButton.textContent = originalText;
-                submitButton.disabled = false;
-            }
-        };
-        resultForm._submitHandler = submitHandler;
-        resultForm.addEventListener('submit', submitHandler);
-    }
 });
 
 // Question Loading
@@ -507,13 +458,7 @@ function loadQuestion() {
         } else {
             document.getElementById('questionnaire')?.classList.remove('active');
             triggerConfetti().then(() => {
-                // Ensure results screen is properly shown
-                const resultsScreen = document.getElementById('results');
-                if (resultsScreen) {
-                    resultsScreen.classList.remove('hidden');
-                    resultsScreen.classList.add('active');
-                    showResults();
-                }
+                showResults();
             });
         }
         isLoadingQuestion = false;
@@ -578,100 +523,6 @@ function updateProgress() {
 }
 
 // Results Handling
-function generateEmailHTML(results) {
-    const getScoreColor = (score) => {
-        if (score >= 86) return '#34c759';
-        if (score >= 71) return '#ffd60a';
-        if (score >= 51) return '#ff9500';
-        return '#ff3b30';
-    };
-
-    const getScoreText = (score) => {
-        if (score >= 86) return 'Excelente';
-        if (score >= 71) return 'Bueno';
-        if (score >= 51) return 'Regular';
-        return 'Necesita mejorar';
-    };
-
-    return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .score-card { background: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-                .score-value { font-size: 24px; font-weight: bold; margin: 10px 0; }
-                .category { margin-bottom: 15px; }
-                .category-title { font-weight: bold; margin-bottom: 10px; }
-                .insight { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                .cta { text-align: center; margin-top: 30px; }
-                .cta-button { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Resultados de tu Evaluación</h1>
-                <p>¡Gracias por completar nuestra evaluación de fitness!</p>
-            </div>
-
-            <div class="score-card">
-                <h2>Puntaje General</h2>
-                <div class="score-value" style="color: ${getScoreColor(results.overallScore)}">
-                    ${results.overallScore}%
-                </div>
-                <p>Tu potencial de mejora: ${100 - results.overallScore}%</p>
-            </div>
-
-            <div class="category">
-                <h3>Puntajes por Categoría</h3>
-                <div class="score-card">
-                    <div class="category-title">Dieta</div>
-                    <div class="score-value" style="color: ${getScoreColor(results.categoryScores.diet)}">
-                        ${results.categoryScores.diet}%
-                    </div>
-                    <p>${getScoreText(results.categoryScores.diet)}</p>
-                </div>
-
-                <div class="score-card">
-                    <div class="category-title">Ejercicio</div>
-                    <div class="score-value" style="color: ${getScoreColor(results.categoryScores.exercise)}">
-                        ${results.categoryScores.exercise}%
-                    </div>
-                    <p>${getScoreText(results.categoryScores.exercise)}</p>
-                </div>
-
-                <div class="score-card">
-                    <div class="category-title">Recuperación</div>
-                    <div class="score-value" style="color: ${getScoreColor(results.categoryScores.recovery)}">
-                        ${results.categoryScores.recovery}%
-                    </div>
-                    <p>${getScoreText(results.categoryScores.recovery)}</p>
-                </div>
-            </div>
-
-            <div class="insights">
-                <h3>Insights Personalizados</h3>
-                ${results.insights.map(insight => `
-                    <div class="insight">
-                        <p>${insight}</p>
-                    </div>
-                `).join('')}
-            </div>
-
-            <div class="cta">
-                <p>¿Listo para mejorar tus resultados?</p>
-                <a href="https://www.queenross.fit/planes/" class="cta-button">
-                    Descubre Nuestros Planes Personalizados
-                </a>
-            </div>
-        </body>
-        </html>
-    `;
-}
-
 function showResults() {
     localStorage.removeItem('quizState');
     const results = calculateResults();
@@ -684,31 +535,69 @@ function showResults() {
         return;
     }
 
-    // Ensure results screen is visible
-    resultsScreen.classList.remove('hidden');
-    resultsScreen.classList.add('active');
-
     const formScores = document.getElementById('form-scores');
     const formGender = document.getElementById('form-gender');
     const formGoal = document.getElementById('form-goal');
-    const formEmailContent = document.getElementById('form-email-content');
-    
-    if (formScores && formGender && formGoal && formEmailContent) {
-        const emailHTML = generateEmailHTML(results);
+    if (formScores && formGender && formGoal) {
         formScores.value = JSON.stringify({
             userInfo,
             total: totalScore,
             improvement: improvementNeeded,
             categories: results.categoryScores,
-            details: currentState.answers,
-            insights: generateInsights()
+            details: currentState.answers
         });
         formGender.value = currentState.gender;
         formGoal.value = currentState.goal;
-        formEmailContent.value = emailHTML;
     }
 
-    // Update scores display
+    const resultForm = document.getElementById('result-form');
+    if (resultForm) {
+        resultForm.removeEventListener('submit', resultForm._submitHandler);
+        const submitHandler = async (e) => {
+            e.preventDefault();
+            const submitButton = resultForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+
+            try {
+                submitButton.textContent = 'Enviando...';
+                submitButton.disabled = true;
+                const response = await fetch(resultForm.action, {
+                    method: 'POST',
+                    body: new FormData(resultForm),
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (response.ok) {
+                    alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
+                    setTimeout(() => {
+                        window.location.href = 'https://www.queenross.fit/planes/';
+                    }, 1500);
+                } else {
+                    throw new Error('Error en el envío');
+                }
+            } catch (error) {
+                logError(error, 'ResultFormSubmission');
+                alert('Hubo un error al enviar el formulario. Por favor intenta nuevamente.');
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        };
+        resultForm._submitHandler = submitHandler;
+        resultForm.addEventListener('submit', submitHandler);
+    }
+
+    const currentPotentialElement = document.getElementById('current-potential');
+    const improvementPotentialElement = document.getElementById('improvement-potential');
+    if (currentPotentialElement) {
+        currentPotentialElement.textContent = totalScore;
+        currentPotentialElement.style.color = '#ff3b30';
+        currentPotentialElement.style.fontWeight = 'bold';
+    }
+    if (improvementPotentialElement) {
+        improvementPotentialElement.textContent = improvementNeeded;
+        improvementPotentialElement.style.color = '#007AFF';
+        improvementPotentialElement.style.fontWeight = 'bold';
+    }
+
     const getScoreColor = (score) => {
         if (score >= 86) return '#34c759';
         if (score >= 71) return '#ffd60a';
@@ -716,7 +605,6 @@ function showResults() {
         return '#ff3b30';
     };
 
-    // Update category scores
     ['diet', 'exercise', 'recovery'].forEach(category => {
         const scoreElement = document.getElementById(`${category}-score`);
         if (scoreElement) {
@@ -729,17 +617,8 @@ function showResults() {
         }
     });
 
-    // Update analysis section
-    const currentPotentialElement = document.getElementById('current-potential');
-    const improvementPotentialElement = document.getElementById('improvement-potential');
-    if (currentPotentialElement) {
-        currentPotentialElement.textContent = totalScore;
-    }
-    if (improvementPotentialElement) {
-        improvementPotentialElement.textContent = improvementNeeded;
-    }
-
-    // Create charts and update detailed scores
+    resultsScreen.classList.remove('hidden');
+    resultsScreen.classList.add('active');
     createCharts();
     updateDetailedScores();
     generateInsights();
