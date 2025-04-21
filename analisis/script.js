@@ -263,18 +263,25 @@ function showScreen(screenId) {
 // Form Submission Helper
 async function submitFormWithRetry(form, maxRetries = 3) {
     let retries = maxRetries;
+    
     while (retries > 0) {
         try {
+            const formData = new FormData(form);
             const response = await fetch(form.action, {
                 method: 'POST',
-                body: new FormData(form),
-                headers: { 'Accept': 'application/json' }
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
+
+            const responseData = await response.json();
+            
             if (response.ok) {
                 return { success: true };
             } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error en el envío');
+                throw new Error(responseData.error || 'Error en el envío');
             }
         } catch (error) {
             logError(error, 'FormSubmission');
@@ -296,20 +303,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactForm) {
         contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const submitButton = contactForm.querySelector('button[type="submit"]');
             const originalText = submitButton.textContent;
-
+            
             try {
                 const fullName = sanitizeInput(document.getElementById('full-name').value.trim());
                 const email = sanitizeInput(document.getElementById('contact-email').value.trim());
                 const phone = sanitizeInput(document.getElementById('phone-number').value.trim());
-
+                
                 if (!fullName || !email || !phone) {
                     throw new Error('Por favor, complete todos los campos.');
                 }
+                
                 if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
                     throw new Error('Por favor, ingrese un correo electrónico válido.');
                 }
+                
                 if (!phone.match(/^\+?\d{7,15}$/)) {
                     throw new Error('Por favor, ingrese un número de teléfono válido (7-15 dígitos).');
                 }
@@ -321,14 +331,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 userInfo.email = email;
                 userInfo.phone = phone;
 
+                // Submit form with traditional form submission if AJAX fails
                 const result = await submitFormWithRetry(contactForm);
-                if (result.success) {
-                    userInfo.isSubmitted = true;
-                    saveState();
-                    showScreen('gender-selection');
-                } else {
-                    throw result.error;
+                if (!result.success) {
+                    // Fallback to traditional form submission
+                    contactForm.submit();
+                    return;
                 }
+                
+                userInfo.isSubmitted = true;
+                saveState();
+                showScreen('gender-selection');
             } catch (error) {
                 alert(error.message || 'Hubo un error al enviar el formulario. Por favor intenta nuevamente.');
             } finally {
@@ -435,6 +448,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         saveState();
     });
+
+    // Handle results form submission
+    const resultForm = document.getElementById('result-form');
+    if (resultForm) {
+        resultForm.removeEventListener('submit', resultForm._submitHandler);
+        const submitHandler = async (e) => {
+            e.preventDefault();
+            const submitButton = resultForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            
+            try {
+                submitButton.textContent = 'Enviando...';
+                submitButton.disabled = true;
+
+                // Submit form with traditional form submission if AJAX fails
+                const result = await submitFormWithRetry(resultForm);
+                if (!result.success) {
+                    // Fallback to traditional form submission
+                    resultForm.submit();
+                    return;
+                }
+
+                alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
+                setTimeout(() => {
+                    window.location.href = 'https://www.queenross.fit/planes/';
+                }, 1500);
+            } catch (error) {
+                logError(error, 'ResultFormSubmission');
+                alert('Hubo un error al enviar el formulario. Por favor intenta nuevamente.');
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        };
+        resultForm._submitHandler = submitHandler;
+        resultForm.addEventListener('submit', submitHandler);
+    }
 });
 
 // Question Loading
