@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construye tu futuro fitness</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        .welcome-screen {
+            position: relative;
+        }
+        .welcome-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('./Body.png');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.5;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Preload image -->
+    <img src="Body.png" alt="" style="display: none;">
+    
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen active">
+        <img src="Body.png" alt="Background" class="welcome-bg">
+        <div class="welcome-overlay"></div>
+        <div class="welcome-content">
+            <h1 class="text-4xl md:text-6xl font-bold mb-6">Construye tu futuro fitness</h1>
+            <p class="text-xl md:text-2xl mb-8">Descubre tus fortalezas. Elimina tus debilidades. Comienza ahora.</p>
+            
+            <!-- Contact Form -->
+            <form id="contact-form" action="https://formspree.io/f/mzzrpkol" method="POST" class="space-y-4 mb-8 w-full max-w-md mx-auto">
+                <input type="text" name="_gotcha" style="display:none">
+                <input type="hidden" name="_next" value="https://www.queenross.fit/gracias">
+                <div class="flex flex-col space-y-2">
+                    <input 
+                        type="text" 
+                        name="fullName" 
+                        id="full-name"
+                        placeholder="Nombre completo" 
+                        required
+                        class="px-4 py-2 rounded-lg border border-gray-300 focus:border-primary-color focus:ring-2 focus:ring-primary-color bg-white bg-opacity-90"
+                    >
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <input 
+                        type="email" 
+                        name="email" 
+                        id="contact-email"
+                        placeholder="Correo electrónico" 
+                        required
+                        class="px-4 py-2 rounded-lg border border-gray-300 focus:border-primary-color focus:ring-2 focus:ring-primary-color bg-white bg-opacity-90"
+                    >
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <input 
+                        type="tel" 
+                        name="phone" 
+                        id="phone-number"
+                        placeholder="Número de teléfono" 
+                        required
+                        class="px-4 py-2 rounded-lg border border-gray-300 focus:border-primary-color focus:ring-2 focus:ring-primary-color bg-white bg-opacity-90"
+                    >
+                </div>
+                <button type="submit" id="start-diagnostic" class="cta-button w-full">Iniciar la prueba</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gender Selection -->
+    <div id="gender-selection" class="screen">
+        <div class="container mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold text-center mb-8">¿Cuál es tu género?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div class="gender-card" data-gender="mujer">
+                    <span class="text-4xl mb-4">👩</span>
+                    <h3 class="text-xl font-bold mb-2">Mujer</h3>
+                </div>
+                <div class="gender-card" data-gender="hombre">
+                    <span class="text-4xl mb-4">👨</span>
+                    <h3 class="text-xl font-bold mb-2">Hombre</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Selection -->
+    <div id="goal-selection" class="screen">
+        <div class="container mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold text-center mb-8">¿Cuál es tu objetivo principal?</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <div class="goal-card" data-goal="muscle">
+                    <span class="text-4xl mb-4">💪</span>
+                    <h3 class="text-xl font-bold mb-2">Construir músculo</h3>
+                    <p>Crea un cuerpo fuerte.</p>
+                </div>
+                <div class="goal-card" data-goal="fat">
+                    <span class="text-4xl mb-4">🔥</span>
+                    <h3 class="text-xl font-bold mb-2">Quemar grasa</h3>
+                    <p>Quema grasa, revela tu verdadera forma.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questionnaire -->
+    <div id="questionnaire" class="screen">
+        <div class="container mx-auto px-4 py-8">
+            <div class="progress-section">
+                <div class="category-header">
+                    <span class="category-emoji">🍎</span> Dieta
+                </div>
+                <div class="progress-bar mb-8">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+            <div id="questions-container" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <!-- Results Page -->
+    <div id="results" class="hidden">
+        <div class="container mx-auto px-4 py-16">
+            <h2 class="text-3xl font-bold text-center mb-8">Tus resultados</h2>
+            
+            <!-- Category Scores -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="category-score" id="diet-score">
+                    <span class="label">🍎 Dieta</span>
+                    <span class="value">-</span>
+                </div>
+                <div class="category-score" id="exercise-score">
+                    <span class="label">🏋️ Ejercicio</span>
+                    <span class="value">-</span>
+                </div>
+                <div class="category-score" id="recovery-score">
+                    <span class="label">💤 Recuperación</span>
+                    <span class="value">-</span>
+                </div>
+            </div>
+
+            <!-- Analysis Section -->
+            <div class="analysis-section mb-12">
+                <div class="analysis-header">
+                    <span class="text-4xl">🔍</span>
+                    <h3 class="text-2xl font-bold">Análisis completo realizado</h3>
+                </div>
+                <div class="analysis-content">
+                    <p class="mb-4">Actualmente, tu protocolo de alimentación, entrenamiento y descanso está funcionando a un <span id="current-potential" style="display: inline-block; min-width: 2ch;"></span>% de su potencial.</p>
+                    <div class="warning-box mb-4">
+                        <span class="text-2xl">⚠️</span>
+                        <p>¿Sabías que podrías mejorar tus resultados hasta en un <span id="improvement-potential" style="display: inline-block; min-width: 2ch;"></span>% simplemente optimizando ciertos aspectos clave de tu rutina? lo que causaria un cambio sumamente notable en tu forma fisica y salud.</p>
+                    </div>
+                    <p class="mb-4">Con mi protocolo personalizado, diseñado en base a ciencia y mis mas de 23 años de experiencia en el mundo del fitness, puedo ayudarte a corregir esos puntos débiles y convertir tu esfuerzo en resultados visibles y sostenibles.</p>
+                    
+                    <!-- Email Collection Form -->
+                    <div class="email-collection-form glass-card mt-8 mb-8">
+                        <h3 class="text-xl font-bold mb-4">¿Quieres recibir tu análisis detallado por correo?</h3>
+                        <form id="result-form" action="https://formspree.io/f/mzzrpkol" method="POST" class="space-y-4">
+                            <input type="text" name="_gotcha" style="display:none">
+                            <input type="hidden" name="_next" value="https://www.queenross.fit/planes">
+                            <input type="hidden" id="form-scores" name="scores" value="">
+                            <input type="hidden" id="form-gender" name="gender" value="">
+                            <input type="hidden" id="form-goal" name="goal" value="">
+                            <div class="flex flex-col">
+                                <input 
+                                    type="email" 
+                                    name="email"
+                                    id="user-email" 
+                                    placeholder="Tu correo electrónico" 
+                                    required
+                                    class="px-4 py-2 rounded-lg border border-gray-300 focus:border-primary-color focus:ring-2 focus:ring-primary-color"
+                                >
+                            </div>
+                            <button type="submit" class="cta-button w-full">
+                                Recibir mi análisis completo
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="cta-box">
+                        <span class="text-2xl">👉</span>
+                        <p>¿Quieres descubrir cómo mejorar tu proceso?</p>
+                        <button id="personalized-plan" class="cta-button">Empieza tu plan personalizado ahora</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                    <div class="chart-label" id="radar-label">resultado general</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                    <div class="chart-label" id="progress-label">Desempeño por categoría</div>
+                </div>
+            </div>
+
+            <!-- Detailed Scores -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <div class="glass-card">
+                    <h3 class="text-xl font-bold mb-4">Detalles de la dieta</h3>
+                    <div id="diet-details"></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="text-xl font-bold mb-4">Detalles del ejercicio</h3>
+                    <div id="exercise-details"></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="text-xl font-bold mb-4">Detalles de la recuperación</h3>
+                    <div id="recovery-details"></div>
+                </div>
+            </div>
+
+            <!-- Insights -->
+            <div id="insights" class="mt-12"></div>
+            
+            <div class="text-center mt-8">
+                <button id="upsell-cta" class="cta-button">Descubre tu potencial</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
