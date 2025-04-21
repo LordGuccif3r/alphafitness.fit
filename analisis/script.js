@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle CTA buttons
     const redirectToPlans = () => {
-        window.location.href = 'https://www.alphafitness.fit/planes/';
+        window.location.href = 'https://www.queenross.fit/planes/';
     };
     document.getElementById('personalized-plan')?.addEventListener('click', redirectToPlans);
     document.getElementById('upsell-cta')?.addEventListener('click', redirectToPlans);
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
                 setTimeout(() => {
-                    window.location.href = 'https://www.alphafitness.fit/planes/';
+                    window.location.href = 'https://www.queenross.fit/planes/';
                 }, 1500);
             } catch (error) {
                 logError(error, 'ResultFormSubmission');
@@ -507,7 +507,13 @@ function loadQuestion() {
         } else {
             document.getElementById('questionnaire')?.classList.remove('active');
             triggerConfetti().then(() => {
-                showResults();
+                // Ensure results screen is properly shown
+                const resultsScreen = document.getElementById('results');
+                if (resultsScreen) {
+                    resultsScreen.classList.remove('hidden');
+                    resultsScreen.classList.add('active');
+                    showResults();
+                }
             });
         }
         isLoadingQuestion = false;
@@ -657,7 +663,7 @@ function generateEmailHTML(results) {
 
             <div class="cta">
                 <p>¿Listo para mejorar tus resultados?</p>
-                <a href="https://www.alphafitness.fit/planes/" class="cta-button">
+                <a href="https://www.queenross.fit/planes/" class="cta-button">
                     Descubre Nuestros Planes Personalizados
                 </a>
             </div>
@@ -677,6 +683,10 @@ function showResults() {
         logError(new Error('Results screen not found'), 'ShowResults');
         return;
     }
+
+    // Ensure results screen is visible
+    resultsScreen.classList.remove('hidden');
+    resultsScreen.classList.add('active');
 
     const formScores = document.getElementById('form-scores');
     const formGender = document.getElementById('form-gender');
@@ -698,19 +708,7 @@ function showResults() {
         formEmailContent.value = emailHTML;
     }
 
-    const currentPotentialElement = document.getElementById('current-potential');
-    const improvementPotentialElement = document.getElementById('improvement-potential');
-    if (currentPotentialElement) {
-        currentPotentialElement.textContent = totalScore;
-        currentPotentialElement.style.color = '#ff3b30';
-        currentPotentialElement.style.fontWeight = 'bold';
-    }
-    if (improvementPotentialElement) {
-        improvementPotentialElement.textContent = improvementNeeded;
-        improvementPotentialElement.style.color = '#007AFF';
-        improvementPotentialElement.style.fontWeight = 'bold';
-    }
-
+    // Update scores display
     const getScoreColor = (score) => {
         if (score >= 86) return '#34c759';
         if (score >= 71) return '#ffd60a';
@@ -718,6 +716,7 @@ function showResults() {
         return '#ff3b30';
     };
 
+    // Update category scores
     ['diet', 'exercise', 'recovery'].forEach(category => {
         const scoreElement = document.getElementById(`${category}-score`);
         if (scoreElement) {
@@ -730,8 +729,17 @@ function showResults() {
         }
     });
 
-    resultsScreen.classList.remove('hidden');
-    resultsScreen.classList.add('active');
+    // Update analysis section
+    const currentPotentialElement = document.getElementById('current-potential');
+    const improvementPotentialElement = document.getElementById('improvement-potential');
+    if (currentPotentialElement) {
+        currentPotentialElement.textContent = totalScore;
+    }
+    if (improvementPotentialElement) {
+        improvementPotentialElement.textContent = improvementNeeded;
+    }
+
+    // Create charts and update detailed scores
     createCharts();
     updateDetailedScores();
     generateInsights();
