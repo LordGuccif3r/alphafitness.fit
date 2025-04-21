@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle CTA buttons
     const redirectToPlans = () => {
-        window.location.href = 'https://www.queenross.fit/planes/';
+        window.location.href = 'https://www.alphafitness.fit/planes/';
     };
     document.getElementById('personalized-plan')?.addEventListener('click', redirectToPlans);
     document.getElementById('upsell-cta')?.addEventListener('click', redirectToPlans);
@@ -472,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
                 setTimeout(() => {
-                    window.location.href = 'https://www.queenross.fit/planes/';
+                    window.location.href = 'https://www.alphafitness.fit/planes/';
                 }, 1500);
             } catch (error) {
                 logError(error, 'ResultFormSubmission');
@@ -657,7 +657,7 @@ function generateEmailHTML(results) {
 
             <div class="cta">
                 <p>¿Listo para mejorar tus resultados?</p>
-                <a href="https://www.queenross.fit/planes/" class="cta-button">
+                <a href="https://www.alphafitness.fit/planes/" class="cta-button">
                     Descubre Nuestros Planes Personalizados
                 </a>
             </div>
