@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle CTA buttons
     const redirectToPlans = () => {
-        window.location.href = 'https://www.queenross.fit/planes/';
+        window.location.href = 'https://www.alphafitness.fit/planes/';
     };
     document.getElementById('personalized-plan')?.addEventListener('click', redirectToPlans);
     document.getElementById('upsell-cta')?.addEventListener('click', redirectToPlans);
@@ -569,7 +569,7 @@ function showResults() {
                 if (response.ok) {
                     alert('¡Gracias! Te hemos enviado el análisis a tu correo.');
                     setTimeout(() => {
-                        window.location.href = 'https://www.queenross.fit/planes/';
+                        window.location.href = 'https://www.alphafitness.fit/planes/';
                     }, 1500);
                 } else {
                     throw new Error('Error en el envío');
